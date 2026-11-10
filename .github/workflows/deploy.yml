@@ -28,8 +28,10 @@ jobs:
       - name: Build static site
         env:
           GITHUB_PAGES: "true"
-          # Uses the repository name as the URL subpath (https://<user>.github.io/<repo>/).
-          GITHUB_PAGES_REPO: ${{ github.event.repository.name }}
+          # Serves the site from https://<user>.github.io/build-an-app/.
+          # Uses the repository name so it stays correct after a rename, with the
+          # current repo name ("build-an-app") as the fallback.
+          GITHUB_PAGES_REPO: ${{ github.event.repository.name || 'build-an-app' }}
         run: bun run build
 
       - name: Prepare Pages folder

@@ -12,7 +12,7 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 // GitHub Pages build: `GITHUB_PAGES=true npm run build` (set by .github/workflows/deploy.yml).
 // Serves the app from https://<user>.github.io/<repo>/ as plain static files.
 const isGitHubPages = process.env["GITHUB_PAGES"] === "true";
-const repoName = process.env["GITHUB_PAGES_REPO"] || "musicid";
+const repoName = process.env["GITHUB_PAGES_REPO"] || "build-an-app";
 
 export default defineConfig(
   isGitHubPages
