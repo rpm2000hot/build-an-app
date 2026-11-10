@@ -20,7 +20,7 @@ export const TOKEN_REJECTED_MESSAGE =
   "AudD rejected your token — it may be invalid or out of credits. Please check it in the Keys panel.";
 
 // AudD error codes: 900 = invalid/inactive token, 901 = request limit reached.
-const TOKEN_ERROR_CODES = [900, 901, 902];
+const TOKEN_ERROR_CODES = [900, 901];
 
 interface AuddResponse {
   status: "success" | "error";
