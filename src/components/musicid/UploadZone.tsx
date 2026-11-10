@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 interface Props {
   disabled: boolean;
-  busyLabel?: string;
+  busyLabel?: string | undefined;
   onFile: (file: File) => void;
 }
 

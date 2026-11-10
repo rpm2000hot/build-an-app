@@ -23,7 +23,15 @@ interface Props {
   onAddKey: () => void;
 }
 
-function Meta({ icon: Icon, label, value }: { icon: typeof Disc3; label: string; value?: string }) {
+function Meta({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Disc3;
+  label: string;
+  value?: string | undefined;
+}) {
   return (
     <div className="flex items-start gap-3 rounded-2xl bg-secondary/60 p-4">
       <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />

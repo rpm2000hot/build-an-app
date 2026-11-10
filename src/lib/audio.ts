@@ -23,7 +23,7 @@ export async function trimToWav(file: File, seconds = CLIP_SECONDS): Promise<Blo
     const mono = new Float32Array(length);
     for (let c = 0; c < buffer.numberOfChannels; c++) {
       const data = buffer.getChannelData(c);
-      for (let i = 0; i < length; i++) mono[i] += data[i] / buffer.numberOfChannels;
+      for (let i = 0; i < length; i++) mono[i] = (mono[i] ?? 0) + (data[i] ?? 0) / buffer.numberOfChannels;
     }
     return encodeWav(mono, sampleRate);
   } finally {
@@ -53,7 +53,7 @@ export function encodeWav(samples: Float32Array, sampleRate: number): Blob {
   view.setUint32(40, dataSize, true);
   let offset = 44;
   for (let i = 0; i < samples.length; i++, offset += 2) {
-    const s = Math.max(-1, Math.min(1, samples[i]));
+    const s = Math.max(-1, Math.min(1, samples[i] ?? 0));
     view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
   }
   return new Blob([view], { type: "audio/wav" });

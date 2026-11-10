@@ -1,14 +1,14 @@
 export interface SongMatch {
   title: string;
   artist: string;
-  album?: string;
-  releaseDate?: string;
-  label?: string;
-  songLink?: string;
-  appleMusicUrl?: string;
-  spotifyUrl?: string;
-  deezerUrl?: string;
-  artworkUrl?: string;
+  album?: string | undefined;
+  releaseDate?: string | undefined;
+  label?: string | undefined;
+  songLink?: string | undefined;
+  appleMusicUrl?: string | undefined;
+  spotifyUrl?: string | undefined;
+  deezerUrl?: string | undefined;
+  artworkUrl?: string | undefined;
 }
 
 export class FriendlyError extends Error {}

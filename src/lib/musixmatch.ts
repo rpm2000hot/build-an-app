@@ -38,7 +38,7 @@ function jsonp<T>(method: string, params: Record<string, string>, timeoutMs = 12
 }
 
 export type LyricsResult =
-  | { kind: "ok"; preview: string; copyright?: string }
+  | { kind: "ok"; preview: string; copyright?: string | undefined }
   | { kind: "none" }
   | { kind: "error"; message: string };
 
