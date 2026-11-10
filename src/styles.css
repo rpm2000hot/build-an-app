@@ -40,6 +40,7 @@
   --color-signal: var(--signal);
   --color-signal-foreground: var(--signal-foreground);
   --color-destructive: var(--destructive);
+  --color-success: var(--success);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
@@ -85,6 +86,7 @@
   --signal-foreground: oklch(0.16 0.02 200);
   --destructive: oklch(0.68 0.19 25);
   --destructive-foreground: oklch(0.98 0.01 80);
+  --success: oklch(0.76 0.17 150);
   --border: oklch(0.95 0.015 80 / 10%);
   --input: oklch(0.95 0.015 80 / 14%);
   --ring: oklch(0.8 0.165 65 / 60%);

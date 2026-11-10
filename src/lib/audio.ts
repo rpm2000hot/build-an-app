@@ -11,7 +11,7 @@ export function isAcceptedAudio(file: File): boolean {
   return ACCEPTED_EXTENSIONS.some((ext) => name.endsWith(ext));
 }
 
-export async function trimToWav(file: File, seconds = CLIP_SECONDS): Promise<Blob> {
+export async function trimToWav(file: Blob, seconds = CLIP_SECONDS): Promise<Blob> {
   const AudioCtx =
     window.AudioContext ||
     (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
