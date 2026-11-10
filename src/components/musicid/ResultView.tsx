@@ -37,12 +37,9 @@ function Meta({ icon: Icon, label, value }: { icon: typeof Disc3; label: string;
   );
 }
 
-function ExtLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <a href={href} target="_blank" rel="noreferrer">
-      {children}
-    </a>
-  );
+// Forwards props so <Button asChild> can pass its classes through.
+function ExtLink(props: React.AnchorHTMLAttributes<HTMLAnchorElement>) {
+  return <a target="_blank" rel="noreferrer" {...props} />;
 }
 
 export function ResultView({ song, lyrics, onAddKey }: Props) {
