@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Settings2, AlertCircle, SearchX, RotateCcw } from "lucide-react";
+import { Settings2, AlertCircle, SearchX, RotateCcw, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { UploadZone } from "@/components/musicid/UploadZone";
@@ -8,9 +8,10 @@ import { ResultView } from "@/components/musicid/ResultView";
 import { SettingsDialog } from "@/components/musicid/SettingsDialog";
 import { Equalizer } from "@/components/musicid/Equalizer";
 import { isAcceptedAudio, MAX_UPLOAD_BYTES, trimToWav } from "@/lib/audio";
-import { FriendlyError, recognizeSong, type SongMatch } from "@/lib/audd";
+import { FriendlyError, TokenRejectedError, recognizeSong, type SongMatch } from "@/lib/audd";
 import { fetchLyricsPreview, type LyricsResult } from "@/lib/musixmatch";
 import { loadKeys, saveKeys, type ApiKeys } from "@/lib/keys";
+import { useRecorder } from "@/hooks/use-recorder";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -36,7 +37,7 @@ export const Route = createFileRoute("/")({
 type Phase =
   | { kind: "idle" }
   | { kind: "busy"; label: string }
-  | { kind: "error"; message: string }
+  | { kind: "error"; message: string; tokenRejected?: boolean }
   | { kind: "nomatch"; fileName: string }
   | { kind: "match"; song: SongMatch };
 
@@ -54,24 +55,47 @@ function Index() {
 
   const busy = phase.kind === "busy";
 
-  async function handleFile(file: File) {
+  const recorder = useRecorder(
+    (audio) => void processAudio(audio, "your recording"),
+    (message) => setPhase({ kind: "error", message }),
+  );
+
+  function requireToken(): boolean {
+    if (keys.audd) return true;
+    setSettingsOpen(true);
+    toast("Add your AudD token first");
+    return false;
+  }
+
+  function handleFile(file: File) {
     if (busy) return;
     if (!isAcceptedAudio(file)) {
       setPhase({ kind: "error", message: "Please choose an .mp3 or .wav file." });
       return;
     }
-    if (!keys.audd) {
-      setSettingsOpen(true);
-      toast("Add your AudD token first");
-      return;
-    }
+    if (!requireToken()) return;
+    void processAudio(file, file.name);
+  }
+
+  function handleRecord() {
+    if (busy || !requireToken()) return;
+    setPhase({ kind: "idle" });
+    void recorder.start();
+  }
+
+  // Shared pipeline for uploads and microphone recordings.
+  async function processAudio(file: Blob, fileName: string) {
     try {
       setPhase({ kind: "busy", label: "Trimming to 12 seconds…" });
       let clip: Blob;
       try {
         clip = await trimToWav(file);
       } catch {
-        throw new FriendlyError("This file couldn't be decoded. Is it a valid MP3 or WAV?");
+        throw new FriendlyError(
+          fileName === "your recording"
+            ? "Your recording couldn't be decoded. Please try recording again."
+            : "This file couldn't be decoded. Is it a valid MP3 or WAV?",
+        );
       }
       if (clip.size > MAX_UPLOAD_BYTES) {
         throw new FriendlyError("The trimmed clip is still over 10 MB. Try a different file.");
@@ -79,7 +103,7 @@ function Index() {
       setPhase({ kind: "busy", label: "Listening…" });
       const song = await recognizeSong(clip, keys.audd);
       if (!song) {
-        setPhase({ kind: "nomatch", fileName: file.name });
+        setPhase({ kind: "nomatch", fileName });
         return;
       }
       setPhase({ kind: "match", song });
@@ -94,7 +118,9 @@ function Index() {
         kind: "error",
         message:
           err instanceof FriendlyError ? err.message : "Something went wrong. Please try again.",
+        tokenRejected: err instanceof TokenRejectedError,
       });
+      if (err instanceof TokenRejectedError) toast.error("Check your AudD token in the Keys panel");
     }
   }
 
@@ -137,6 +163,10 @@ function Index() {
               disabled={busy}
               busyLabel={phase.kind === "busy" ? phase.label : undefined}
               onFile={handleFile}
+              recorder={recorder.state}
+              elapsed={recorder.elapsed}
+              onRecord={handleRecord}
+              onStop={recorder.stop}
             />
             {phase.kind === "error" && (
               <div
@@ -144,7 +174,14 @@ function Index() {
                 className="flex items-start gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 p-4 text-sm"
               >
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-                <span>{phase.message}</span>
+                <div className="flex-1 space-y-3">
+                  <p>{phase.message}</p>
+                  {phase.tokenRejected && (
+                    <Button size="sm" variant="chip" onClick={() => setSettingsOpen(true)}>
+                      <KeyRound /> Open Keys panel
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
             {phase.kind === "nomatch" && (
@@ -171,11 +208,14 @@ function Index() {
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         keys={keys}
-        onSave={(k) => {
-          saveKeys(k);
+        onSaveAudd={(token) => {
+          saveKeys({ ...keys, audd: token });
           setKeys(loadKeys());
-          setSettingsOpen(false);
-          toast.success("Keys saved in this browser");
+          if (phase.kind === "error" && phase.tokenRejected) setPhase({ kind: "idle" });
+        }}
+        onSaveMusixmatch={(key) => {
+          saveKeys({ ...keys, musixmatch: key });
+          setKeys(loadKeys());
         }}
       />
     </div>
