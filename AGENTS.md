@@ -28,3 +28,12 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project rules (MusicID)
+
+- The app is 100% client-side and deploys to GitHub Pages; never add server functions, server routes, a database or backend dependencies — Pages only serves static files.
+- Third-party API keys (AudD, Musixmatch) are entered by the visitor and kept in localStorage (`src/lib/keys.ts`); never read them from `VITE_*` env or Lovable Secrets — anything bundled is public.
+- Musixmatch is called via JSONP (`src/lib/musixmatch.ts`) because it sends no CORS headers; AudD is called with fetch (it allows CORS).
+- Audio is trimmed with the Web Audio API to mono WAV (`src/lib/audio.ts`), not ffmpeg.wasm — avoids a ~30 MB download.
+- GitHub Pages builds are switched on by `GITHUB_PAGES=true` in `vite.config.ts` (subpath base, router basepath, nitro off, prerender `/`); the default config must stay untouched so the Lovable preview keeps working. Output is `dist/client`.
+- Asset URLs in `__root.tsx` head must use `import.meta.env.BASE_URL` so they resolve under the Pages subpath.
