@@ -9,10 +9,28 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-export default defineConfig({
-  tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
-    server: { entry: "server" },
-  },
-});
+// GitHub Pages build: `GITHUB_PAGES=true npm run build` (set by .github/workflows/deploy.yml).
+// Serves the app from https://<user>.github.io/<repo>/ as plain static files.
+const isGitHubPages = process.env.GITHUB_PAGES === "true";
+const repoName = process.env.GITHUB_PAGES_REPO || "musicid";
+
+export default defineConfig(
+  isGitHubPages
+    ? {
+        vite: { base: `/${repoName}/` },
+        nitro: false,
+        tanstackStart: {
+          server: { entry: "server" },
+          router: { basepath: `/${repoName}/` },
+          pages: [{ path: "/" }],
+          prerender: { enabled: true, autoStaticPathsDiscovery: false, crawlLinks: false },
+        },
+      }
+    : {
+        tanstackStart: {
+          // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
+          // nitro/vite builds from this
+          server: { entry: "server" },
+        },
+      },
+);
