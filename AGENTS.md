@@ -37,3 +37,5 @@ use the editor.
 - Audio is trimmed with the Web Audio API to mono WAV (`src/lib/audio.ts`), not ffmpeg.wasm — avoids a ~30 MB download.
 - GitHub Pages builds are switched on by `GITHUB_PAGES=true` in `vite.config.ts` (subpath base, router basepath, nitro off, prerender `/`); the default config must stay untouched so the Lovable preview keeps working. Output is `dist/client`.
 - Asset URLs in `__root.tsx` head must use `import.meta.env.BASE_URL` so they resolve under the Pages subpath.
+- Microphone input uses MediaRecorder (`src/hooks/use-recorder.ts`) and feeds the same pipeline as uploads (`processAudio` in `src/routes/index.tsx`), so trimming and AudD handling stay in one place.
+- AudD tokens are validated by POSTing only `api_token` (no audio): error 700 ("no file") means the token is accepted, 900/901 mean rejected — this avoids spending a recognition request.
