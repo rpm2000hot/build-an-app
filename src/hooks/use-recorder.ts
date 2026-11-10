@@ -6,8 +6,6 @@ export const MAX_RECORDING_SECONDS = 60;
 
 export type RecorderState = "idle" | "starting" | "recording";
 
-export class RecorderError extends Error {}
-
 function pickMimeType(): string | undefined {
   if (typeof MediaRecorder === "undefined" || !MediaRecorder.isTypeSupported) return undefined;
   const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"];
