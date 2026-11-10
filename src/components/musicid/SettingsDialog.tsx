@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { KeyRound, ExternalLink } from "lucide-react";
+import { KeyRound, ExternalLink, Loader2, CheckCircle2, XCircle, ShieldCheck } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,20 +11,65 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { FriendlyError, validateAuddToken } from "@/lib/audd";
 import type { ApiKeys } from "@/lib/keys";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   keys: ApiKeys;
-  onSave: (keys: ApiKeys) => void;
+  onSaveAudd: (token: string) => void;
+  onSaveMusixmatch: (key: string) => void;
 }
 
-export function SettingsDialog({ open, onOpenChange, keys, onSave }: Props) {
-  const [draft, setDraft] = useState(keys);
+type TestStatus =
+  | { kind: "idle" }
+  | { kind: "testing" }
+  | { kind: "valid" }
+  | { kind: "invalid"; message: string };
+
+export const TOKEN_VALID_MESSAGE = "Token is valid!";
+export const TOKEN_INVALID_MESSAGE = "Invalid token or no credits left";
+
+export function SettingsDialog({ open, onOpenChange, keys, onSaveAudd, onSaveMusixmatch }: Props) {
+  const [audd, setAudd] = useState(keys.audd);
+  const [mxm, setMxm] = useState(keys.musixmatch);
+  const [status, setStatus] = useState<TestStatus>({ kind: "idle" });
+  const [mxmSaved, setMxmSaved] = useState(false);
+
   useEffect(() => {
-    if (open) setDraft(keys);
+    if (open) {
+      setAudd(keys.audd);
+      setMxm(keys.musixmatch);
+      setStatus({ kind: "idle" });
+      setMxmSaved(false);
+    }
   }, [open, keys]);
+
+  async function testAndSave() {
+    const token = audd.trim();
+    if (!token) {
+      setStatus({ kind: "invalid", message: "Enter your AudD token first." });
+      return;
+    }
+    setStatus({ kind: "testing" });
+    try {
+      const result = await validateAuddToken(token);
+      if (result === "valid") {
+        onSaveAudd(token);
+        setStatus({ kind: "valid" });
+      } else {
+        setStatus({ kind: "invalid", message: TOKEN_INVALID_MESSAGE });
+      }
+    } catch (err) {
+      setStatus({
+        kind: "invalid",
+        message: err instanceof FriendlyError ? err.message : "Couldn't test the token. Please try again.",
+      });
+    }
+  }
+
+  const testing = status.kind === "testing";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -40,60 +85,108 @@ export function SettingsDialog({ open, onOpenChange, keys, onSave }: Props) {
         </DialogHeader>
 
         <form
-          className="space-y-5"
+          className="space-y-2"
           onSubmit={(e) => {
             e.preventDefault();
-            onSave(draft);
+            void testAndSave();
           }}
         >
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="audd">AudD API token</Label>
-              <a
-                href="https://dashboard.audd.io/"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
-              >
-                Get one <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="audd">AudD API token</Label>
+            <a
+              href="https://dashboard.audd.io/"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+            >
+              Get one <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+          <div className="flex gap-2">
             <Input
               id="audd"
               type="password"
               autoComplete="off"
               placeholder="Required for recognition"
-              value={draft.audd}
-              onChange={(e) => setDraft({ ...draft, audd: e.target.value })}
+              value={audd}
+              aria-invalid={status.kind === "invalid"}
+              aria-describedby="audd-status"
+              onChange={(e) => {
+                setAudd(e.target.value);
+                if (status.kind !== "testing") setStatus({ kind: "idle" });
+              }}
             />
+            <Button type="submit" variant="hero" className="shrink-0" disabled={testing}>
+              {testing ? <Loader2 className="animate-spin" /> : <ShieldCheck />}
+              {testing ? "Testing…" : "Test & Save"}
+            </Button>
           </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="mxm">Musixmatch API key</Label>
-              <a
-                href="https://developer.musixmatch.com/"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
-              >
-                Get one <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
+          <div id="audd-status" aria-live="polite" className="min-h-5 text-sm">
+            {status.kind === "valid" && (
+              <p className="flex items-center gap-1.5 font-medium text-success">
+                <CheckCircle2 className="h-4 w-4" /> {TOKEN_VALID_MESSAGE}
+              </p>
+            )}
+            {status.kind === "invalid" && (
+              <p role="alert" className="flex items-center gap-1.5 font-medium text-destructive">
+                <XCircle className="h-4 w-4" /> {status.message}
+              </p>
+            )}
+            {status.kind === "idle" && keys.audd && audd.trim() === keys.audd && (
+              <p className="text-xs text-muted-foreground">A token is saved in this browser.</p>
+            )}
+          </div>
+        </form>
+
+        <form
+          className="space-y-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSaveMusixmatch(mxm);
+            setMxmSaved(true);
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <Label htmlFor="mxm">Musixmatch API key</Label>
+            <a
+              href="https://developer.musixmatch.com/"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+            >
+              Get one <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+          <div className="flex gap-2">
             <Input
               id="mxm"
               type="password"
               autoComplete="off"
               placeholder="Optional, for lyrics preview"
-              value={draft.musixmatch}
-              onChange={(e) => setDraft({ ...draft, musixmatch: e.target.value })}
+              value={mxm}
+              onChange={(e) => {
+                setMxm(e.target.value);
+                setMxmSaved(false);
+              }}
             />
-          </div>
-          <DialogFooter>
-            <Button type="submit" variant="hero" className="w-full sm:w-auto">
-              Save keys
+            <Button type="submit" variant="chip" className="shrink-0">
+              Save
             </Button>
-          </DialogFooter>
+          </div>
+          <div aria-live="polite" className="min-h-5 text-sm">
+            {mxmSaved && (
+              <p className="flex items-center gap-1.5 text-success">
+                <CheckCircle2 className="h-4 w-4" /> Saved
+              </p>
+            )}
+          </div>
         </form>
+
+        <DialogFooter>
+          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+            Done
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
