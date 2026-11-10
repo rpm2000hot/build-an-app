@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { KeyRound, ExternalLink, Loader2, CheckCircle2, XCircle, ShieldCheck } from "lucide-react";
 import {
   Dialog,
@@ -11,7 +11,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { FriendlyError, validateAuddToken } from "@/lib/audd";
+import {
+  FriendlyError,
+  TOKEN_INVALID_MESSAGE,
+  TOKEN_VALID_MESSAGE,
+  validateAuddToken,
+} from "@/lib/audd";
 import type { ApiKeys } from "@/lib/keys";
 
 interface Props {
@@ -28,22 +33,22 @@ type TestStatus =
   | { kind: "valid" }
   | { kind: "invalid"; message: string };
 
-export const TOKEN_VALID_MESSAGE = "Token is valid!";
-export const TOKEN_INVALID_MESSAGE = "Invalid token or no credits left";
-
 export function SettingsDialog({ open, onOpenChange, keys, onSaveAudd, onSaveMusixmatch }: Props) {
   const [audd, setAudd] = useState(keys.audd);
   const [mxm, setMxm] = useState(keys.musixmatch);
   const [status, setStatus] = useState<TestStatus>({ kind: "idle" });
   const [mxmSaved, setMxmSaved] = useState(false);
 
+  // Reset the form each time the panel opens (not when a save updates `keys`).
+  const wasOpen = useRef(false);
   useEffect(() => {
-    if (open) {
+    if (open && !wasOpen.current) {
       setAudd(keys.audd);
       setMxm(keys.musixmatch);
       setStatus({ kind: "idle" });
       setMxmSaved(false);
     }
+    wasOpen.current = open;
   }, [open, keys]);
 
   async function testAndSave() {

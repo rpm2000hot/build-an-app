@@ -16,6 +16,9 @@ export class FriendlyError extends Error {}
 /** The AudD token was rejected (invalid, inactive or out of requests). */
 export class TokenRejectedError extends FriendlyError {}
 
+export const TOKEN_VALID_MESSAGE = "Token is valid!";
+export const TOKEN_INVALID_MESSAGE = "Invalid token or no credits left";
+
 export const TOKEN_REJECTED_MESSAGE =
   "AudD rejected your token — it may be invalid or out of credits. Please check it in the Keys panel.";
 
